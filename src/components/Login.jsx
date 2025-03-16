@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Login = ({ setIsAuthenticated, setUserRole }) => {
-  const [username, setusername] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -19,18 +19,24 @@ const Login = ({ setIsAuthenticated, setUserRole }) => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({  username, password }),
+        body: JSON.stringify({ username, password }),
       });
 
       const data = await response.json();
       console.log("Login Response:", data);
 
       if (response.ok && data.statusCode === 200) {
+        // Store token and role in localStorage
         localStorage.setItem("token", data.data.token);
         localStorage.setItem("userRole", data.data.user.role);
+        
+        // Update authentication state
         setIsAuthenticated(true);
-        setUserRole(data.data.role);
+        setUserRole(data.data.user.role);
+
+        // Navigate and reload the page for a full update
         navigate("/dashboard");
+        window.location.reload();
       } else {
         setError(data.message || "Invalid credentials");
       }
@@ -48,10 +54,10 @@ const Login = ({ setIsAuthenticated, setUserRole }) => {
         <form onSubmit={handleLogin} className="space-y-3">
           <input
             type="text"
-            placeholder="username"
+            placeholder="Username"
             className="w-full p-2 border border-gray-600 rounded-md bg-gray-700 text-white"
             value={username}
-            onChange={(e) => setusername(e.target.value)}
+            onChange={(e) => setUsername(e.target.value)}
           />
           <input
             type="password"
