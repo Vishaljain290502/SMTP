@@ -35,7 +35,7 @@ const Login = ({ setIsAuthenticated, setUserRole }) => {
         setUserRole(data.data.user.role);
 
         // Navigate and reload the page for a full update
-        navigate("/dashboard");
+        navigate("/");
         window.location.reload();
       } else {
         setError(data.message || "Invalid credentials");
