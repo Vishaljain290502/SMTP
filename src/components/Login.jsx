@@ -5,13 +5,15 @@ const Login = ({ setIsAuthenticated, setUserRole }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const SERVER_URL = import.meta.env.VITE_SERVER_URL;
-  
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
       const response = await fetch(`${SERVER_URL}/auth/login`, {
@@ -26,15 +28,12 @@ const Login = ({ setIsAuthenticated, setUserRole }) => {
       console.log("Login Response:", data);
 
       if (response.ok && data.statusCode === 200) {
-        // Store token and role in localStorage
         localStorage.setItem("token", data.data.token);
         localStorage.setItem("userRole", data.data.user.role);
-        
-        // Update authentication state
+
         setIsAuthenticated(true);
         setUserRole(data.data.user.role);
 
-        // Navigate and reload the page for a full update
         navigate("/");
         window.location.reload();
       } else {
@@ -43,6 +42,8 @@ const Login = ({ setIsAuthenticated, setUserRole }) => {
     } catch (error) {
       console.error("Login Error:", error);
       setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -66,11 +67,24 @@ const Login = ({ setIsAuthenticated, setUserRole }) => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <button 
+          <button
             type="submit"
-            className="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700"
+            className={`w-full py-2 rounded-md text-white ${
+              loading ? "bg-purple-400 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"
+            }`}
+            disabled={loading}
           >
-            Login
+            {loading ? (
+              <div className="flex items-center justify-center">
+                <svg className="animate-spin h-5 w-5 mr-2 text-white" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                Logging in...
+              </div>
+            ) : (
+              "Login"
+            )}
           </button>
         </form>
       </div>
