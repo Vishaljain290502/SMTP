@@ -13,10 +13,10 @@ const TemplateAdmin = () => {
 
   const [templateForm, setTemplateForm] = useState({
     name: "",
-    emailName: "", // ✅ Added emailName
+    emailName: "", 
     email: "",
     category: "",
-    markup: "", // ✅ Changed from content to markup
+    markup: "", 
   });
 
   // Fetch Templates from API

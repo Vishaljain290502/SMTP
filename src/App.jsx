@@ -54,7 +54,7 @@ function App() {
                 <Route path="/" element={<EmailSender />} />
                 <Route path="/templates" element={<TemplateCreate />} />
                 <Route path="/templates/:id" element={<TemplateDetails />} /> 
-                <Route path="/users" element={<UsersManagement />} />
+                <Route path="/users" element={<UsersManagement userRole={userRole} />} />
                 <Route path="/settings" element={<SettingsPage userRole={userRole} />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/emails" element={<AllEmails userRole={userRole} />} />

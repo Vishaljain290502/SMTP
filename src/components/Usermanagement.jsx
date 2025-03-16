@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { FiUserPlus, FiEdit, FiTrash, FiSave, FiX } from "react-icons/fi";
 
-const UsersManagement = () => {
+const UsersManagement = ({ userRole }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [newUser, setNewUser] = useState({ username: "", password: "", role: "" });
+  const [newUser, setNewUser] = useState({ username: "", password: "", role: "", workerName: "", status: true });
 
   const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
@@ -35,36 +35,9 @@ const UsersManagement = () => {
     }
   };
 
-  const handleInputChange = (e) => {
-    setNewUser({ ...newUser, [e.target.name]: e.target.value });
-  };
-
-  const createUser = async () => {
-    try {
-      const response = await fetch(`${SERVER_URL}/user`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify(newUser),
-      });
-      if (!response.ok) throw new Error("Failed to create user");
-      fetchUsers();
-      setShowModal(false);
-      setNewUser({ username: "", password: "", role: "" });
-    } catch (error) {
-      console.error("Error creating user:", error);
-    }
-  };
-
-  const editUser = (user) => {
-    setSelectedUser(user);
-    setShowEditModal(true);
-  };
-
   const handleEditInputChange = (e) => {
-    setSelectedUser({ ...selectedUser, [e.target.name]: e.target.value });
+    const { name, value, type, checked } = e.target;
+    setSelectedUser({ ...selectedUser, [name]: type === "checkbox" ? checked : value });
   };
 
   const updateUser = async () => {
@@ -75,10 +48,16 @@ const UsersManagement = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ role: selectedUser.role, username: selectedUser.username }),
+        body: JSON.stringify({ 
+          role: selectedUser.role, 
+          username: selectedUser.username, 
+          workerName: selectedUser.workerName,
+          status: selectedUser.status
+        }),
       });
       if (!response.ok) throw new Error("Failed to update user");
-      fetchUsers();
+
+      setUsers(users.map((user) => (user._id === selectedUser._id ? selectedUser : user))); 
       setShowEditModal(false);
       setSelectedUser(null);
     } catch (error) {
@@ -93,7 +72,8 @@ const UsersManagement = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       if (!response.ok) throw new Error("Failed to delete user");
-      fetchUsers();
+
+      setUsers(users.filter((user) => user._id !== id));
     } catch (error) {
       console.error("Error deleting user:", error);
     }
@@ -120,7 +100,9 @@ const UsersManagement = () => {
           <thead>
             <tr className="bg-gray-800">
               <th className="p-3 border border-gray-700">Username</th>
+              <th className="p-3 border border-gray-700">Worker Name</th>
               <th className="p-3 border border-gray-700">Role</th>
+              <th className="p-3 border border-gray-700">Status</th>
               <th className="p-3 border border-gray-700">Actions</th>
             </tr>
           </thead>
@@ -128,14 +110,18 @@ const UsersManagement = () => {
             {users.map((user) => (
               <tr key={user._id} className="text-center border border-gray-700">
                 <td className="p-3">{user.username}</td>
+                <td className="p-3">{user.workerName}</td>
                 <td className="p-3">{user.role}</td>
+                <td className={`p-3 ${user.status ? "text-green-500" : "text-red-500"}`}>
+                  {user.status ? "Active" : "Inactive"}
+                </td>
                 <td className="p-3 flex justify-center space-x-2">
-                  <button onClick={() => editUser(user)} className="text-yellow-500 hover:text-yellow-400">
+                  <button onClick={() => setSelectedUser(user) || setShowEditModal(true)} className="text-yellow-500 hover:text-yellow-400">
                     <FiEdit />
                   </button>
-                  <button onClick={() => deleteUser(user._id)} className="text-red-500 hover:text-red-400">
+                  {/* <button onClick={() => deleteUser(user._id)} className="text-red-500 hover:text-red-400">
                     <FiTrash />
-                  </button>
+                  </button> */}
                 </td>
               </tr>
             ))}
@@ -143,35 +129,41 @@ const UsersManagement = () => {
         </table>
       )}
 
-      {/* Create User Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-1/3">
-            <h2 className="text-lg font-bold mb-4">Create User</h2>
-            <label>Username</label>
-            <input name="username" value={newUser.username} className="w-full p-2 mb-3 bg-gray-900 text-white" onChange={handleInputChange} />
-            <label>Password</label>
-            <input name="password" type="password" value={newUser.password} className="w-full p-2 mb-3 bg-gray-900 text-white" onChange={handleInputChange} />
-            <label>Role</label>
-            <input name="role" value={newUser.role} className="w-full p-2 mb-3 bg-gray-900 text-white" onChange={handleInputChange} />
-            <div className="flex justify-end space-x-2">
-              <button onClick={() => setShowModal(false)} className="px-4 py-2 bg-gray-700 rounded-md text-white"><FiX /> Cancel</button>
-              <button onClick={createUser} className="px-4 py-2 bg-purple-600 rounded-md text-white"><FiSave /> Create</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Edit User Modal */}
-      {showEditModal && (
+      {showEditModal && selectedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-1/3">
             <h2 className="text-lg font-bold mb-4">Edit User</h2>
-            <label>Username</label>
-            <input name="username" value={selectedUser?.username} className="w-full p-2 mb-3 bg-gray-900 text-white" onChange={handleEditInputChange} />
-            <label>Role</label>
-            <input name="role" value={selectedUser?.role} className="w-full p-2 mb-3 bg-gray-900 text-white" onChange={handleEditInputChange} />
-            <div className="flex justify-end space-x-2">
+
+            <label className="block text-sm text-gray-300 mb-1">Username</label>
+            <input name="username" value={selectedUser.username} className="w-full p-2 mb-3 bg-gray-900 text-white" onChange={handleEditInputChange} />
+
+            <label className="block text-sm text-gray-300 mb-1">Worker Name</label>
+            <input name="workerName" value={selectedUser.workerName} className="w-full p-2 mb-3 bg-gray-900 text-white" onChange={handleEditInputChange} />
+
+            <label className="block text-sm text-gray-300 mb-1">Role</label>
+            <select name="role" value={selectedUser.role} className="w-full p-2 mb-3 bg-gray-900 text-white" onChange={handleEditInputChange}>
+              {userRole === "owner" ? (
+                <>
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                  <option value="owner">Owner</option>
+                </>
+              ) : (
+                <>
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </>
+              )}
+            </select>
+
+            <label className="block text-sm text-gray-300 mb-1">Status</label>
+            <label className="flex items-center space-x-2">
+              <input type="checkbox" name="status" checked={selectedUser.status} onChange={handleEditInputChange} />
+              <span>Active</span>
+            </label>
+
+            <div className="flex justify-end space-x-2 mt-4">
               <button onClick={() => setShowEditModal(false)} className="px-4 py-2 bg-gray-700 rounded-md text-white"><FiX /> Cancel</button>
               <button onClick={updateUser} className="px-4 py-2 bg-purple-600 rounded-md text-white"><FiSave /> Save</button>
             </div>
