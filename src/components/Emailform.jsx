@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import axios from "axios";
 import { FiMail, FiEye } from "react-icons/fi";
+import { data } from "react-router-dom";
 
 const EmailForm = ({ form, setForm, sendEmail, openPreview }) => {
   const [groupedTemplates, setGroupedTemplates] = useState([]);
@@ -46,9 +47,15 @@ const EmailForm = ({ form, setForm, sendEmail, openPreview }) => {
         }
 
         const response = await axios.get(`${SERVER_URL}/template`, {
+          params: {
+            page: 1,
+            limit: 100000,
+            inactive: false,
+          },
           headers: { Authorization: `Bearer ${token}` },
         });
 
+        console.log("dtat",response.data.data.results);
         const templates = response.data.data.results;
         groupTemplatesByCategory(templates);
       } catch (error) {

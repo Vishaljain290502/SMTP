@@ -55,6 +55,36 @@ const TemplateAdmin = () => {
     setIsEditorReady(true);
   };
 
+  const updateStatus = async (templateId, currentStatus) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No token found");
+        return;
+      }
+  
+      const response = await fetch(`${SERVER_URL}/template/status/${templateId}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+  
+      if (!response.ok) throw new Error("Failed to update status");
+  
+      // Update the UI state
+      setTemplates((prevTemplates) =>
+        prevTemplates.map((template) =>
+          template._id === templateId ? { ...template, inactive: !template.inactive } : template
+        )
+      );
+    } catch (error) {
+      console.error("Error updating status:", error);
+    }
+  };
+  
+
   const saveTemplate = async () => {
     if (!isEditorReady || !emailEditorRef.current) {
       alert("Email editor is not ready yet. Please try again.");
@@ -147,42 +177,40 @@ const TemplateAdmin = () => {
       <main className="flex-1 overflow-y-auto p-6 bg-gray-950">
         {activeTab === "list" ? (
           <div className="bg-gray-900 rounded-lg shadow-md border border-gray-700">
-            <table className="min-w-full divide-y divide-gray-700">
-              <thead className="bg-gray-800">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Category</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Created</th>
+         <table className="min-w-full divide-y divide-gray-700">
+            <thead className="bg-gray-800">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Category</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Created</th>
+              </tr>
+            </thead>
+            <tbody className="bg-gray-900 divide-y divide-gray-700">
+              {templates.map((template) => (
+                <tr key={template._id} className="hover:bg-gray-800">
+                  <td className="px-6 py-4 text-sm font-medium text-white">{template.name}</td>
+                  <td className="px-6 py-4 text-sm text-gray-400">{template.email}</td>
+                  <td className="px-6 py-4 text-sm text-gray-400">{template.category}</td>
+                  <td className="px-6 py-4 text-sm">
+                  <select
+                    value={template.inactive ? "Inactive" : "Active"}
+                    onChange={() => updateStatus(template._id, template.inactive)}
+                    className="bg-gray-800 border border-gray-700 rounded-md text-white px-2 py-1"
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </td>
+
+                  <td className="px-6 py-4 text-sm text-gray-400">
+                    {new Date(template.createdAt).toLocaleDateString()}
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="bg-gray-900 divide-y divide-gray-700">
-                {templates.length > 0 ? (
-                  templates.map((template) => (
-                    <tr
-                      key={template._id}
-                      className="hover:bg-gray-800 cursor-pointer"
-                      onClick={() => navigate(`/templates/${template._id}`)}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                        {template.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">{template.email}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">{template.category}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                        {new Date(template.createdAt).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="4" className="text-center py-4 text-gray-400">
-                      No templates found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+              ))}
+            </tbody>
+          </table>
           </div>
         ) : (
           <div className="bg-gray-900 rounded-lg shadow-md border border-gray-700 p-6">
