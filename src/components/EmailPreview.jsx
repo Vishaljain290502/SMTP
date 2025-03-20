@@ -21,10 +21,7 @@ const EmailPreview = ({ form, setForm, dynamicForm }) => {
     const val = template.replace(/{{(.*?)}}/g, (match, key) => {
       return data[key];
     });
-    // setForm((prevForm) => ({
-    //   ...prevForm,
-    //   finalMarkup: val,
-    // }));
+
     return val;
   }
 

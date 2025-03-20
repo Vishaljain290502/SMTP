@@ -4,6 +4,7 @@ import DynamicForm from "./DynamicForm";
 import RenderHTMLBox from "./HTMLIFrame";
 // import EmailEditor from "react-email-editor";
 // import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 function extractDynamicFields(htmlString) {
   const regex = /\{([^{}]+)\}/g;
@@ -110,6 +111,18 @@ const TemplateAdmin = () => {
     };
 
     try {
+      const errors = [];
+
+      Object.entries(newTemplate).forEach(([key, value]) => {
+        if (!value) {
+          errors.push(`"${key}" is required`);
+        }
+      });
+
+      if (errors.length) {
+        throw new Error(errors[0]);
+      }
+
       const token = localStorage.getItem("token");
       if (!token) {
         alert("Authentication token missing. Please log in.");
@@ -125,14 +138,16 @@ const TemplateAdmin = () => {
         body: JSON.stringify(newTemplate),
       });
 
-      if (!response.ok) throw new Error("Failed to save template");
+      const res = await response.json();
+
+      if (res.status === "error") throw new Error(res.message);
 
       alert("Template saved successfully!");
       setActiveTab("list");
       fetchTemplates();
     } catch (error) {
       console.error("Error saving template:", error);
-      alert("Error saving template.");
+      toast.error(error.message);
     }
   };
 
