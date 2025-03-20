@@ -3,9 +3,11 @@ import Select from "react-select";
 import axios from "axios";
 import { FiMail, FiEye } from "react-icons/fi";
 import { data } from "react-router-dom";
+import DynamicForm from "./DynamicForm";
 
-const EmailForm = ({ form, setForm, sendEmail, openPreview }) => {
+const EmailForm = ({ form, setForm, sendEmail, openPreview, onChange }) => {
   const [groupedTemplates, setGroupedTemplates] = useState([]);
+  const [dynamicValues, setDynamicValues] = useState({});
   const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
   // Fetch Worker Name (Username)
@@ -55,8 +57,8 @@ const EmailForm = ({ form, setForm, sendEmail, openPreview }) => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        console.log("dtat",response.data.data.results);
         const templates = response.data.data.results;
+
         groupTemplatesByCategory(templates);
       } catch (error) {
         console.error("Error fetching templates", error);
@@ -78,6 +80,7 @@ const EmailForm = ({ form, setForm, sendEmail, openPreview }) => {
         email: template.email,
         markup: template.markup,
         emailName: template.emailName,
+        fields: template.feilds,
       });
 
       return acc;
@@ -91,35 +94,34 @@ const EmailForm = ({ form, setForm, sendEmail, openPreview }) => {
     );
   };
 
-  // Replace placeholders in the template
-  const replacePlaceholders = (templateContent = "", updatedForm) => {
-    return templateContent
-      .replace(/\{sendingFrom\}/g, updatedForm.sendingFrom || "")
-      .replace(/\{workerName\}/g, updatedForm.workerName || "")
-      .replace(/\{extra\}/g, updatedForm.extra || "")
-      .replace(/\{recipient\}/g, updatedForm.recipient || "");
-  };
-
   // Handle template selection
   const handleTemplateChange = (selectedTemplate) => {
-    console.log("selectec",selectedTemplate);
+    console.log("selectec", selectedTemplate);
     setForm((prevForm) => ({
       ...prevForm,
       template: selectedTemplate,
-      sendingFrom: selectedTemplate.email, 
-      sendingName: selectedTemplate.emailName || "", 
-      markup: replacePlaceholders(selectedTemplate.markup, prevForm),
+      sendingFrom: selectedTemplate.email,
+      sendingName: selectedTemplate.emailName || "",
+      markup: selectedTemplate.markup,
+      fields: selectedTemplate.fields,
     }));
   };
-  
 
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setForm((prevForm) => {
       const updatedForm = { ...prevForm, [name]: value };
-      return { ...updatedForm, markup: replacePlaceholders(prevForm.markup, updatedForm) };
+      return {
+        ...updatedForm,
+        markup: prevForm.markup,
+      };
     });
+  };
+
+  const handleFormChange = (data) => {
+    setDynamicValues(data);
+    onChange(data);
   };
 
   return (
@@ -131,7 +133,9 @@ const EmailForm = ({ form, setForm, sendEmail, openPreview }) => {
       </div>
 
       <div className="p-4">
-        <label className="text-xs font-medium text-gray-300">Select Template</label>
+        <label className="text-xs font-medium text-gray-300">
+          Select Template
+        </label>
         <Select
           options={groupedTemplates}
           onChange={handleTemplateChange}
@@ -144,7 +148,9 @@ const EmailForm = ({ form, setForm, sendEmail, openPreview }) => {
       <div className="p-4 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <label className="text-xs font-medium text-gray-300">From Name</label>
+            <label className="text-xs font-medium text-gray-300">
+              From Name
+            </label>
             <input
               className="w-full p-1.5 border border-gray-600 rounded-md bg-gray-800 text-white"
               name="sendingName"
@@ -154,7 +160,9 @@ const EmailForm = ({ form, setForm, sendEmail, openPreview }) => {
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-300">From Email</label>
+            <label className="text-xs font-medium text-gray-300">
+              From Email
+            </label>
             <input
               className="w-full p-1.5 border border-gray-600 rounded-md bg-gray-800 text-white"
               name="sendingFrom"
@@ -190,7 +198,9 @@ const EmailForm = ({ form, setForm, sendEmail, openPreview }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <label className="text-xs font-medium text-gray-300">Worker Name</label>
+            <label className="text-xs font-medium text-gray-300">
+              Worker Name
+            </label>
             <input
               className="w-full p-1.5 border border-gray-600 rounded-md bg-gray-800 text-white"
               name="workerName"
@@ -201,13 +211,15 @@ const EmailForm = ({ form, setForm, sendEmail, openPreview }) => {
           </div>
         </div>
 
+        <DynamicForm disp fields={form.fields} onChange={handleFormChange} />
+
         <div className="flex justify-between mt-4 pt-3 border-t border-gray-700">
           <button
             className="px-3 py-1.5 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center shadow-sm"
             onClick={() => {
               setForm((prevForm) => ({
                 ...prevForm,
-                markup: replacePlaceholders(prevForm.template?.markup || "", prevForm),
+                markup: (prevForm.template?.markup || "", prevForm),
               }));
             }}
           >

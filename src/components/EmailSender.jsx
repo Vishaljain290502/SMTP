@@ -1,7 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import EmailForm from "./Emailform";
 import EmailPreview from "./EmailPreview";
 import axios from "axios";
+
+function replacePlaceholders(template, data) {
+  console.log("dynamic form replce inpreviwe  : ", data, "   \n", template);
+
+  const val = template.replace(/{{(.*?)}}/g, (match, key) => {
+    return data[key] ?? match;
+  });
+  // setForm((prevForm) => ({
+  //   ...prevForm,
+  //   finalMarkup: val,
+  // }));
+  return val;
+}
 
 const EmailSender = () => {
   const [form, setForm] = useState({
@@ -14,33 +27,28 @@ const EmailSender = () => {
     extra: "Authentication Code: 475-3",
     template: null,
     markup: "",
+    fields: [],
+    finalMarkup: "",
   });
+  const [dynamicValues, setDynamicValues] = useState({});
 
   const SERVER_URL = import.meta.env.VITE_SERVER_URL;
   const [showPreview, setShowPreview] = useState(false);
 
-  // Function to replace placeholders dynamically
-  const replacePlaceholders = (templateContent = "", formData) => {
-    return templateContent
-      .replace(/\{sendingFrom\}/g, formData.sendingFrom || "")
-      .replace(/\{workerName\}/g, formData.workerName || "")
-      .replace(/\{extra\}/g, formData.extra || "")
-      .replace(/\{recipient\}/g, formData.recipient || "");
-  };
-
   // Fetch template details when the user selects a template
   const handleTemplateChange = async (selectedTemplate) => {
     try {
-      const { data } = await axios.get(`${SERVER_URL}/template/${selectedTemplate.value}`);
+      const { data } = await axios.get(
+        `${SERVER_URL}/template/${selectedTemplate.value}`
+      );
 
       setForm((prevForm) => {
-        const updatedMarkup = replacePlaceholders(data.markup || "", prevForm);
-
         return {
           ...prevForm,
           template: selectedTemplate,
           sendingFrom: data.email || prevForm.sendingFrom,
-          markup: updatedMarkup,
+          markup: data.markup,
+          fields: data.fields,
         };
       });
     } catch (error) {
@@ -79,11 +87,10 @@ const EmailSender = () => {
       const emailData = {
         to: form.recipient.trim(),
         subject: form.subject,
-        html: form.markup, // HTML Content
+        html: replacePlaceholders(form.markup, dynamicValues), // HTML Content
         text: form.markup.replace(/<[^>]*>/g, ""), // Convert HTML to Plain Text
         from: form.sendingFrom, // Sender Email
         workerName: form.workerName, // Worker Name
-        caseId: form.caseId || "", // Case ID (optional)
         template: form.template?.value || null, // Template ID
       };
 
@@ -110,7 +117,9 @@ const EmailSender = () => {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 p-6">
       <div className="w-full max-w-6xl">
         {/* Title */}
-        <h2 className="text-white text-2xl font-bold text-center mb-4">Send an Email</h2>
+        <h2 className="text-white text-2xl font-bold text-center mb-4">
+          Send an Email
+        </h2>
 
         {/* Responsive Grid */}
         <div
@@ -126,12 +135,17 @@ const EmailSender = () => {
             sendEmail={sendEmail}
             openPreview={() => setShowPreview(!showPreview)}
             onTemplateSelect={handleTemplateChange}
+            onChange={setDynamicValues}
           />
 
           {/* Email Preview (Shown Only When Toggled) */}
           {showPreview && (
             <div className="w-full">
-              <EmailPreview form={form} setForm={setForm} />
+              <EmailPreview
+                form={form}
+                setForm={setForm}
+                dynamicForm={dynamicValues}
+              />
             </div>
           )}
         </div>
